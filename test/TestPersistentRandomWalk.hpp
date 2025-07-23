@@ -44,6 +44,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "AbstractCellBasedWithTimingsTestSuite.hpp"
 
 #include "RandomMotionForce.hpp"
+#include "AppliedVelocityForce.hpp"
 #include "AbstractCellBasedWithTimingsTestSuite.hpp"
 #include "CellVolumesWriter.hpp"
 #include "CellsGenerator.hpp"
@@ -53,6 +54,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "OffLatticeSimulation.hpp"
 #include "SmartPointers.hpp"
 #include "DifferentiatedCellProliferativeType.hpp"
+#include "PersistentRandomWalkModifier.hpp"
 
 #include "NodeVelocityWriter.hpp"
 
@@ -67,6 +69,9 @@ class Test01PersistentRandomWalk: public AbstractCellBasedWithTimingsTestSuite
 private:
 
 public:
+ 
+    // Edit this to take in XML file to specify parameters or use string generated for JSON.
+
 
     /**
      * Simple node based random walk of N cells 
@@ -81,9 +86,9 @@ public:
         double end_time = 1;
         double dt = 1.0/100.0;
 
-        std::string model_types[2] = {"Model001","Model003"};
+        std::string model_types[2] = {"Model001","Model004"};
 
-        for (unsigned model_type_index = 0; model_type_index != 1; model_type_index++)
+        for (unsigned model_type_index = 1; model_type_index != 2; model_type_index++)
         {
             std::string model_type = model_types[model_type_index];
 
@@ -119,9 +124,25 @@ public:
             simulator.SetEndTime(end_time);
             simulator.SetUpdateCellPopulationRule(false);
 
-            // Create a Random force law (i.e diffusion) and pass it to the simulation
-            MAKE_PTR(RandomMotionForce<2>, p_diffusion_force);
-            simulator.AddForce(p_diffusion_force);
+            if(model_type.compare("Model001")==0) 
+            { 
+                // Create a Random force law (i.e diffusion) and pass it to the simulation
+                MAKE_PTR(RandomMotionForce<2>, p_diffusion_force);
+                simulator.AddForce(p_diffusion_force);
+            }
+            else if(model_type.compare("Model004")==0) 
+            {
+                MAKE_PTR(AppliedVelocityForce<2>, p_applied_velocity_force);
+                simulator.AddForce(p_applied_velocity_force);
+                
+                MAKE_PTR(PersistentRandomWalkModifier<2>, p_modifier);
+                // TODO set parameters on modifier
+                simulator.AddSimulationModifier(p_modifier);
+            }
+            else
+            {
+            NEVER_REACHED;
+            }
 
             simulator.Solve();
 
