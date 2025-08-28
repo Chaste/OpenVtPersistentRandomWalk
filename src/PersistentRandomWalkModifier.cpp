@@ -52,6 +52,62 @@ PersistentRandomWalkModifier<DIM>::~PersistentRandomWalkModifier()
 }
 
 template<unsigned DIM>
+void PersistentRandomWalkModifier<DIM>::SetVelocityChangeRate(double newValue)
+{
+    assert(newValue >= 0.0);
+    mVelocityChangeRate = newValue;
+}
+template<unsigned DIM>
+double PersistentRandomWalkModifier<DIM>::GetVelocityChangeRate()
+{
+    return mVelocityChangeRate;
+}
+
+template<unsigned DIM>
+void PersistentRandomWalkModifier<DIM>::SetMotilityParameter(double newValue)
+{
+    assert(newValue >= 0.0);
+    mMotilityParmeter = newValue;
+}
+template<unsigned DIM>
+double PersistentRandomWalkModifier<DIM>::GetMotilityParameter()
+{
+    return mMotilityParmeter;
+}
+
+template<unsigned DIM>
+void PersistentRandomWalkModifier<DIM>::SetBiasParameter(double newValue)
+{
+    assert(newValue >= 0.0);
+    mBiasParmeter = newValue;
+}
+template<unsigned DIM>
+double PersistentRandomWalkModifier<DIM>::GetBiasParameter()
+{
+    return mBiasParmeter;
+}
+
+template<unsigned DIM>
+void PersistentRandomWalkModifier<DIM>::SetBiasDirection(c_vector<double,DIM> newValue)
+{
+    // Don't need an assert, bias can be in any direction, so long as its right ;)
+    // check its unitary
+    // double val = 0;
+    // for (unsigned i=0; i<(DIM-1); i++)
+    // {
+    //     val = val + newValue[i]*newValue[i];
+    // }
+    // val = sqrt(val);
+    // assert(val == 1);
+    mBiasDirection = newValue;
+}
+template<unsigned DIM>
+c_vector<double,DIM> PersistentRandomWalkModifier<DIM>::GetBiasDirection()
+{
+    return mBiasDirection;
+}
+
+template<unsigned DIM>
 void PersistentRandomWalkModifier<DIM>::UpdateAtEndOfTimeStep(AbstractCellPopulation<DIM,DIM>& rCellPopulation)
 {
     UpdateCellData(rCellPopulation);
@@ -102,7 +158,11 @@ void PersistentRandomWalkModifier<DIM>::UpdateCellData(AbstractCellPopulation<DI
     {
 
         double probability_update = dt*mVelocityChangeRate;
-
+        if (mVelocityChangeRate == 0.0)
+        {
+            probability_update = 1.0;
+        }
+        
         // Sample ot see if updating velocity 
         double u = RandomNumberGenerator::Instance()->ranf();
         

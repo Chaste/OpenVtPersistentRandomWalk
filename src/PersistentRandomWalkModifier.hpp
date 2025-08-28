@@ -50,14 +50,7 @@ template<unsigned DIM>
 class PersistentRandomWalkModifier : public AbstractCellBasedSimulationModifier<DIM,DIM>
 {
 private:
-    double mVelocityChangeRate;
-
-    double mMotilityParmeter;
-
-    double mBiasParmeter;
-
-    c_vector<double, DIM> mBiasDirection;
-
+   
     /** Needed for serialization. */
     friend class boost::serialization::access;
     /**
@@ -71,7 +64,20 @@ private:
     void serialize(Archive & archive, const unsigned int version)
     {
         archive & boost::serialization::base_object<AbstractCellBasedSimulationModifier<DIM,DIM> >(*this);
+        archive & mVelocityChangeRate;
+        archive & mMotilityParmeter;
+        archive & mBiasParmeter;
+        archive & mBiasDirection;
     }
+
+    double mVelocityChangeRate;
+
+    double mMotilityParmeter;
+
+    double mBiasParmeter;
+
+    c_vector<double, DIM> mBiasDirection;
+
 
 public:
 
@@ -84,6 +90,58 @@ public:
      * Destructor.
      */
     virtual ~PersistentRandomWalkModifier();
+
+    /**
+     * Set the Velocity Change Rate
+     *
+     * @param VelocityChangeRate
+     */
+    void SetVelocityChangeRate(double VelocityChangeRate);
+    /**
+     * Get the Velocity Change Rate
+     *
+     * @return VelocityChangeRate
+     */
+    double GetVelocityChangeRate();
+
+    /**
+     * Set the Motility Parmeter
+     *
+     * @param MotilityParmeter
+     */
+    void SetMotilityParameter(double MotilityParmeter);
+    /**
+     * Get the Motility Parmeter
+     *
+     * @return MotilityParmeter
+     */
+    double GetMotilityParameter();
+
+    /**
+     * Set the Bias Parmeter
+     *
+     * @param BiasParmeter
+     */
+    void SetBiasParameter(double BiasParmeter);
+    /**
+     * Get the Bias Parmeter
+     *
+     * @return BiasParmeter
+     */
+    double GetBiasParameter();
+
+    /**
+     * Set the Bias Direction
+     *
+     * @param mBiasDirection
+     */
+    void SetBiasDirection(c_vector<double,DIM> BiasDirection);
+    /**
+     * Get the Bias Direction
+     *
+     * @return BiasDirection
+     */
+    c_vector<double,DIM> GetBiasDirection();
 
     /**
      * Overridden UpdateAtEndOfTimeStep() method.
