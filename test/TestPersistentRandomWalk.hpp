@@ -80,69 +80,76 @@ public:
     {
         EXIT_IF_PARALLEL; // Cant access cells with index loop on multiple processors.
 
+        TS_ASSERT(CommandLineArguments::Instance()->OptionExists("-num_cells"));
+        unsigned num_cells = CommandLineArguments::Instance()->GetUnsignedCorrespondingToOption("-num_cells");
+
+        TS_ASSERT(CommandLineArguments::Instance()->OptionExists("-sampling_rate"));
+        unsigned sampling_rate = CommandLineArguments::Instance()->GetUnsignedCorrespondingToOption("-sampling_rate");
+
+        TS_ASSERT(CommandLineArguments::Instance()->OptionExists("-end_time"));
+        double end_time = CommandLineArguments::Instance()->GetDoubleCorrespondingToOption("-end_time");
+
+        TS_ASSERT(CommandLineArguments::Instance()->OptionExists("-dt"));
+        double dt = CommandLineArguments::Instance()->GetDoubleCorrespondingToOption("-dt");
+
+        TS_ASSERT(CommandLineArguments::Instance()->OptionExists("-model_type"));
+        std::string model_type = CommandLineArguments::Instance()->GetStringCorrespondingToOption("-model_type");
+
+        TS_ASSERT(CommandLineArguments::Instance()->OptionExists("-output_name"));
+        std::string output_name = CommandLineArguments::Instance()->GetStringCorrespondingToOption("-output_name");
+
         std::string base_name = "OpenVT/Test01PersistentRandomWalk/";
+        std::string output_dir = base_name + output_name;
+    
+        PRINT_2_VARIABLES("Number of cells", num_cells);
+        PRINT_2_VARIABLES("End time", end_time);
+        PRINT_2_VARIABLES("Time step", dt);
+        PRINT_2_VARIABLES("Model type", model_type);
+        PRINT_2_VARIABLES("Output name", output_name);
 
-        unsigned num_cells = 10;
-        double end_time = 1;
-        double dt = 1.0/100.0;
+        bool is_model_001 = (model_type.compare("MODEL001")==0);
+        bool is_model_004 = (model_type.compare("MODEL004")==0);
+        PRINT_2_VARIABLES("Is this model 001?", is_model_001);
+        PRINT_2_VARIABLES("Is this model 004?", is_model_004);
 
-        std::string model_types[2] = {"Model001","Model004"};
+        // Create a simple mesh
+        std::vector<Node<2>*> nodes (num_cells);
 
-        for (unsigned model_type_index = 1; model_type_index != 2; model_type_index++)
+        for ( unsigned j = 0; j < num_cells; j++ )
         {
-            std::string model_type = model_types[model_type_index];
+                nodes[j] = new Node<2>(j, false, 0.0,0.0);
+        }
 
-            std::string output_dir = base_name + model_type;
-        
-            PRINT_VARIABLE(output_dir);
+        // Convert this to a NodesOnlyMesh
+        NodesOnlyMesh<2> mesh;
+        mesh.ConstructNodesWithoutMesh(nodes, 1.5);
 
-            // Create a simple mesh
-            std::vector<Node<2>*> nodes (num_cells);
+        // Create cells
+        std::vector<CellPtr> cells;
+        MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type);
+        CellsGenerator<FixedG1GenerationalCellCycleModel, 2> cells_generator;
+        cells_generator.GenerateBasicRandom(cells, mesh.GetNumNodes(), p_differentiated_type);
 
-            for ( unsigned j = 0; j < num_cells; j++ )
-            {
-                    nodes[j] = new Node<2>(j, false, 0.0,0.0);
-            }
+        // Create a node-based cell population
+        NodeBasedCellPopulation<2> node_based_cell_population(mesh, cells);
 
-            // Convert this to a NodesOnlyMesh
-            NodesOnlyMesh<2> mesh;
-            mesh.ConstructNodesWithoutMesh(nodes, 1.5);
+        // Set up cell-based simulation
+        OffLatticeSimulation<2> simulator(node_based_cell_population);
+        simulator.SetOutputDirectory(output_dir);
+        simulator.SetDt(dt);
+        simulator.SetSamplingTimestepMultiple(sampling_rate);
+        simulator.SetEndTime(end_time);
+        simulator.SetUpdateCellPopulationRule(false);
 
-            // Create cells
-            std::vector<CellPtr> cells;
-            MAKE_PTR(DifferentiatedCellProliferativeType, p_differentiated_type);
-            CellsGenerator<FixedG1GenerationalCellCycleModel, 2> cells_generator;
-            cells_generator.GenerateBasicRandom(cells, mesh.GetNumNodes(), p_differentiated_type);
+        if(model_type.compare("MODEL001")==0) 
+        {
+            TS_ASSERT(CommandLineArguments::Instance()->OptionExists("-movement_parameter"));
+            double movement_parameter = CommandLineArguments::Instance()->GetDoubleCorrespondingToOption("-movement_parameter");
 
-            // Create a node-based cell population
-            NodeBasedCellPopulation<2> node_based_cell_population(mesh, cells);
-
-            // Set up cell-based simulation
-            OffLatticeSimulation<2> simulator(node_based_cell_population);
-            simulator.SetOutputDirectory(output_dir);
-            simulator.SetDt(dt);
-            simulator.SetEndTime(end_time);
-            simulator.SetUpdateCellPopulationRule(false);
-
-            if(model_type.compare("Model001")==0) 
-            { 
-                // Create a Random force law (i.e diffusion) and pass it to the simulation
-                MAKE_PTR(RandomMotionForce<2>, p_diffusion_force);
-                simulator.AddForce(p_diffusion_force);
-            }
-            else if(model_type.compare("Model004")==0) 
-            {
-                MAKE_PTR(AppliedVelocityForce<2>, p_applied_velocity_force);
-                simulator.AddForce(p_applied_velocity_force);
-                
-                MAKE_PTR(PersistentRandomWalkModifier<2>, p_modifier);
-                // TODO set parameters on modifier
-                simulator.AddSimulationModifier(p_modifier);
-            }
-            else
-            {
-            NEVER_REACHED;
-            }
+            // Create a Random force law (i.e diffusion) and pass it to the simulation
+            MAKE_PTR(RandomMotionForce<2>, p_diffusion_force);
+            p_diffusion_force->SetMovementParameter(movement_parameter);
+            simulator.AddForce(p_diffusion_force);
 
             simulator.Solve();
 
@@ -150,6 +157,49 @@ public:
             SimulationTime::Instance()->Destroy();
             SimulationTime::Instance()->SetStartTime(0.0);
         }
+        else if(model_type.compare("MODEL004")==0) 
+        {
+            TS_ASSERT(CommandLineArguments::Instance()->OptionExists("-velocity_change_rate"));
+            double velocity_change_rate = CommandLineArguments::Instance()->GetDoubleCorrespondingToOption("-velocity_change_rate");
+
+            TS_ASSERT(CommandLineArguments::Instance()->OptionExists("-motility_parameter"));
+            double motility_parameter = CommandLineArguments::Instance()->GetDoubleCorrespondingToOption("-motility_parameter");
+
+            TS_ASSERT(CommandLineArguments::Instance()->OptionExists("-bias_parameter"));
+            double bias_parameter = CommandLineArguments::Instance()->GetDoubleCorrespondingToOption("-bias_parameter");
+
+            TS_ASSERT(CommandLineArguments::Instance()->OptionExists("-bias_direction_x"));
+            double bias_direction_x = CommandLineArguments::Instance()->GetDoubleCorrespondingToOption("-bias_direction_x");
+
+            TS_ASSERT(CommandLineArguments::Instance()->OptionExists("-bias_direction_y"));
+            double bias_direction_y = CommandLineArguments::Instance()->GetDoubleCorrespondingToOption("-bias_direction_y");
+
+            c_vector<double, 2> bias_direction;
+            bias_direction[0] = bias_direction_x;
+            bias_direction[1] = bias_direction_y;
+            MAKE_PTR(AppliedVelocityForce<2>, p_applied_velocity_force);
+            simulator.AddForce(p_applied_velocity_force);
+            
+            MAKE_PTR(PersistentRandomWalkModifier<2>, p_modifier);
+            // TODO set parameters on modifier
+            p_modifier->SetVelocityChangeRate(velocity_change_rate);
+            p_modifier->SetMotilityParameter(motility_parameter);
+            p_modifier->SetBiasParameter(bias_parameter);
+            p_modifier->SetBiasDirection(bias_direction);
+            simulator.AddSimulationModifier(p_modifier);
+
+            simulator.Solve();
+
+            // Reset for next simulation
+            SimulationTime::Instance()->Destroy();
+            SimulationTime::Instance()->SetStartTime(0.0);
+        }
+        else
+        {
+            NEVER_REACHED;
+        }
+
+       
     }
         
         

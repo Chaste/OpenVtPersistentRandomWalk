@@ -1,0 +1,25 @@
+{
+  "model": {
+    "len_1": 100,
+    "len_2": 100,
+    "max_time": 10000,
+    "method": "CM",
+    "model": "MODEL004",
+    "model_args": {
+      "ptime": 0.0,
+      "bias": 0.5,
+      "speed": 0.1,
+      "bdir": 0.0
+    }
+  },
+  "sim": {
+    "num_sims": 100,
+    "output_name": "model004",
+    "output_per": 100
+  },
+  "center-model": {
+    "damping": 1.0,
+    "space_conv": 1.0,
+    "time_conv": 1.0
+  }
+}
